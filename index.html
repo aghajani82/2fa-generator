@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>2FA Code Generator — Private TOTP</title>
+  <meta name="description" content="Private, client-side TOTP codes and authenticator QR codes. No accounts, analytics, external requests, or saved secrets.">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./vendor/qrcode.min.js" defer></script>
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <main class="shell">
+    <section class="card" aria-label="Two-factor authentication code generator">
+      <header class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.8" y="10.4" width="14.4" height="10" rx="2.2"/><path d="M8 10.4V7a4 4 0 0 1 8 0v3.4"/><circle cx="12" cy="15.1" r=".8" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <span><h1>2FA Code Generator</h1><p>Client-side TOTP · nothing leaves your browser</p></span>
+      </header>
+
+      <form id="generator" autocomplete="off" novalidate>
+        <label for="secret">Secret key <span class="label-hint">(Base32 or otpauth://)</span></label>
+        <div class="input-row">
+          <div class="secret-wrap">
+            <input id="secret" name="secret" type="password" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="ABCD EFGH IJKL MNOP" maxlength="4096" required aria-describedby="help">
+            <button class="reveal" id="reveal" type="button" aria-label="Show secret key" title="Show or hide secret">Show</button>
+          </div>
+          <button class="primary" id="generate" type="submit">Generate</button>
+        </div>
+        <p id="help" class="helper">Base32 letters A–Z, digits 2–7. Spaces and hyphens are fine. You can also paste a TOTP setup link.</p>
+        <p id="error" class="error" role="alert" hidden></p>
+      </form>
+
+      <section class="code-panel" aria-live="off" aria-label="Current two-factor authentication code">
+        <div class="countdown" id="countdownRing"><span id="seconds">30</span></div>
+        <div class="code-middle">
+          <span class="eyebrow">CURRENT CODE</span>
+          <output class="code" id="code" aria-label="Generated security code">— — — — — —</output>
+        </div>
+        <button class="copy" id="copy" type="button" disabled aria-label="Copy current code" title="Copy code">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="8" y="8" width="11" height="12" rx="1.6"/><path d="M16 8V6.2A2.2 2.2 0 0 0 13.8 4H6.2A2.2 2.2 0 0 0 4 6.2v9.6A2.2 2.2 0 0 0 6.2 18H8"/></svg>
+        </button>
+      </section>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+
+      <div class="actions">
+        <button type="button" class="quiet" id="qrToggle" aria-expanded="false" aria-controls="qrPanel" disabled>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h3v3h-3v-3Zm5 0h3v3h-3v-3Zm-5 5h3v3h-3v-3Zm5 0h3v3h-3v-3Z"/></svg>
+          <span id="qrLabel">Show QR code</span><span id="chevron" aria-hidden="true">⌄</span>
+        </button>
+        <button type="button" class="quiet reset" id="clear">Clear</button>
+      </div>
+
+      <section class="qr-panel" id="qrPanel" hidden aria-label="Authenticator setup QR code">
+        <div class="qr-surface"><div id="qr" class="qr" role="img" aria-label="QR code containing the current TOTP secret for authenticator setup"></div><span>Scan with Google Authenticator, Authy, Microsoft Authenticator, etc.</span></div>
+        <p class="qr-warning">⚠ This QR contains your secret key. Never share it or a screenshot.</p>
+      </section>
+
+      <details class="advanced" id="advanced">
+        <summary>Compatibility settings <span>SHA-1 / SHA-256 / SHA-512</span></summary>
+        <div class="fields">
+          <div><label for="algorithm">Algorithm</label><select id="algorithm"><option value="SHA1">SHA-1 (standard)</option><option value="SHA256">SHA-256</option><option value="SHA512">SHA-512</option></select></div>
+          <div><label for="digits">Digits</label><select id="digits"><option value="6">6 (standard)</option><option value="7">7</option><option value="8">8</option></select></div>
+          <div><label for="period">Period (seconds)</label><input id="period" type="number" inputmode="numeric" min="5" max="300" step="1" value="30"></div>
+          <div><label for="issuer">Service / issuer (QR label)</label><input id="issuer" type="text" maxlength="120" placeholder="e.g. Hetzner" autocomplete="off"></div>
+          <div class="field-wide"><label for="account">Account (QR label)</label><input id="account" type="text" maxlength="120" placeholder="e.g. your-email@example.com" autocomplete="off"></div>
+        </div>
+        <p class="helper">Most services, including Hetzner's usual TOTP setup, use SHA-1, 6 digits, and 30 seconds. Match any special settings supplied by your service.</p>
+      </details>
+    </section>
+    <footer><span>PRIVATE BY DESIGN</span><span class="divider">·</span><a href="https://github.com/aghajani82/2fa-generator" target="_blank" rel="noopener noreferrer">GitHub</a><span class="divider">·</span><span>No tracking · No storage</span></footer>
+  </main>
+</body>
+</html>
